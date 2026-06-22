@@ -16,7 +16,7 @@ const lastMessages = new Map(); // Stores { chatId: { messageId, text, imageUrl 
 const bot = new TelegramBot(process.env.BOT_TOKEN);
 
 // Bot for admin notifications (deposits, orders, etc.)
-const ADMIN_BOT_TOKEN = '8662579997:AAHp2xw6pZLOcfHumSWfmT3BsU8NMsfMA0Y';
+const ADMIN_BOT_TOKEN = '8731737556:AAGkhIskrrQMAXdbCfEiz0RJkdqDYJ7lmKE';
 const adminBot = new TelegramBot(ADMIN_BOT_TOKEN);
 
 // MySQL Connection Pool (using credentials from environment or fallback)
