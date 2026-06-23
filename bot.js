@@ -307,10 +307,22 @@ const sendTelegramMessage = async (chatId, text, imageUrl, type, amount, uid, ti
 
 // 🔹 Function to broadcast a message to all users
 const broadcastMessage = async (text, imageUrl) => {
-    console.log(`Broadcasting message: "${text}" to ${userChatIds.size} users`);
+    let activeUsers = [];
+    try {
+        const [rows] = await pool.execute('SELECT tg_id, first_name FROM auth WHERE bot_id = ?', [botId]);
+        activeUsers = rows;
+    } catch (err) {
+        console.error('Failed to load active users from DB for broadcast:', err.message);
+        // Fallback to memory cache
+        activeUsers = Array.from(userChatIds.entries()).map(([tg_id, first_name]) => ({ tg_id, first_name }));
+    }
+
+    console.log(`Broadcasting message: "${text}" to ${activeUsers.length} users`);
     const results = [];
 
-    for (const [chatId, firstName] of userChatIds) {
+    for (const user of activeUsers) {
+        const chatId = String(user.tg_id);
+        const firstName = user.first_name || 'user';
         console.log(`Attempting to send message to chat ID: ${chatId}`);
         const userStatus = {
             chatId: chatId,
@@ -336,7 +348,7 @@ const broadcastMessage = async (text, imageUrl) => {
                     inline_keyboard: [
                         [
                             {
-                                text: '🦾 Open App',
+                                text: 'Open App',
                                 web_app: { url: 'https://musical-caramel-cae47e.netlify.app/' }
                             }
                         ]
