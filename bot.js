@@ -89,6 +89,24 @@ const saveUserChatId = async (user) => {
 // Call loadUserChatIds when the bot starts
 loadUserChatIds();
 
+// Save the bot's username to the settings table on startup for dynamic lookup by the client
+const saveBotUsername = async () => {
+    try {
+        const me = await bot.getMe();
+        const botUsername = me.username;
+        console.log(`Resolved bot username on startup: @${botUsername} (Bot ID: ${botId})`);
+        await pool.execute(
+            'INSERT INTO settings (setting_key, bot_id, setting_value) VALUES ("bot_username", ?, ?) ' +
+            'ON DUPLICATE KEY UPDATE setting_value = ?',
+            [botId, botUsername, botUsername]
+        );
+        console.log(`Bot username saved to settings database.`);
+    } catch (e) {
+        console.error('Failed to save bot username to settings DB:', e.message);
+    }
+};
+saveBotUsername();
+
 // Helper: Check if user has phone number (via your PHP API)
 const checkUserPhone = async (tgId) => {
     try {
