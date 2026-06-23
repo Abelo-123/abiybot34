@@ -14,6 +14,8 @@ const lastMessages = new Map(); // Stores { chatId: { messageId, text, imageUrl 
 
 // Bot for user-facing messages (inline keyboard, web app)
 const bot = new TelegramBot(process.env.BOT_TOKEN);
+const botTokenStr = process.env.BOT_TOKEN || '';
+const botId = botTokenStr.split(':')[0] || 'default_bot';
 
 // Bot for admin notifications (deposits, orders, etc.)
 const ADMIN_BOT_TOKEN = '8731737556:AAGkhIskrrQMAXdbCfEiz0RJkdqDYJ7lmKE';
@@ -38,11 +40,11 @@ const sentMessageIds = new Map();
 // Load user chat IDs from MySQL (auth table)
 const loadUserChatIds = async () => {
     try {
-        const [rows] = await pool.execute('SELECT tg_id, first_name FROM auth');
+        const [rows] = await pool.execute('SELECT tg_id, first_name FROM auth WHERE bot_id = ?', [botId]);
         rows.forEach((row) => {
             if (row.tg_id) userChatIds.set(row.tg_id.toString(), row.first_name || 'user');
         });
-        console.log(`Loaded ${rows.length} user chat IDs from MySQL.`);
+        console.log(`Loaded ${rows.length} user chat IDs for bot ${botId} from MySQL.`);
     } catch (error) {
         console.error('Failed to load user chat IDs from MySQL:', error);
     }
@@ -71,14 +73,14 @@ const saveUserChatId = async (user) => {
         const username = user.username || '';
 
         await pool.execute(
-            `INSERT INTO auth (tg_id, first_name, last_name, username, created_at, last_seen) 
-             VALUES (?, ?, ?, ?, NOW(), NOW()) 
+            `INSERT INTO auth (tg_id, bot_id, first_name, last_name, username, created_at, last_seen) 
+             VALUES (?, ?, ?, ?, ?, NOW(), NOW()) 
              ON DUPLICATE KEY UPDATE last_seen = NOW(), first_name = VALUES(first_name), last_name = VALUES(last_name), username = VALUES(username)`,
-            [tgId, firstName, lastName, username]
+            [tgId, botId, firstName, lastName, username]
         );
 
         userChatIds.set(tgId, firstName || 'user');
-        console.log(`User ${tgId} saved/updated in MySQL.`);
+        console.log(`User ${tgId} saved/updated for bot ${botId} in MySQL.`);
     } catch (error) {
         console.error(`Failed to save user ${user.id} to MySQL:`, error.message);
     }
@@ -449,7 +451,7 @@ app.post('/api/sendToJohn', async (req, res) => {
             if (!userName || userName === 'Unknown') {
                 try {
                     console.log(`[sendToJohn] Cache miss. Querying DB by tg_id = ${uid}`);
-                    const [rows] = await pool.execute('SELECT first_name, tg_id FROM auth WHERE tg_id = ? LIMIT 1', [uid]);
+                    const [rows] = await pool.execute('SELECT first_name, tg_id FROM auth WHERE tg_id = ? AND bot_id = ? LIMIT 1', [uid, botId]);
                     if (rows.length > 0) {
                         userName = rows[0].first_name || 'Unknown';
                         console.log(`[sendToJohn] Found by tg_id: ${userName}`);
