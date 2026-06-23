@@ -436,7 +436,7 @@ app.post('/api/sendToJohn', async (req, res) => {
     const uuuid = req.body.uuuid;
     const service = req.body.service;
 
-    const adminBotInstance = new TelegramBot(ADMIN_BOT_TOKEN);
+    const adminBotInstance = adminBot; // reuse the already-created admin bot instance
 
     const userIds = [5928771903, 779060335, 460529558]; // Liffrst of user IDs
 
@@ -645,7 +645,7 @@ app.listen(PORT, () => {
 });
 
 
-const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || 'https://paxyo-bot-ywuk.onrender.com';
+const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || 'https://abiybot34.onrender.com';
 
 bot.setWebHook(`${WEBHOOK_URL}/bot${process.env.BOT_TOKEN}`);
 

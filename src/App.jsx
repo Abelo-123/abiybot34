@@ -12,7 +12,7 @@ function App() {
   const handleBroadcast = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://paxyo-bot-ywuk.onrender.com/api/broadcast', { message, imageUrl });
+      const response = await axios.post('https://abiybot34.onrender.com/api/broadcast', { message, imageUrl });
       setBroadcastResults(response.data.results);
       setIsModalOpen(true);
       setMessage('');
@@ -26,7 +26,7 @@ function App() {
   const handleBroadcastImage = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://paxyo-bot-ywuk.onrender.com/api/broadcastImage', { imageUrl });
+      const response = await axios.post('https://abiybot34.onrender.com/api/broadcastImage', { imageUrl });
       setBroadcastResults(response.data.results);
       setIsModalOpen(true);
       setImageUrl('');
@@ -39,7 +39,7 @@ function App() {
   const handleSendToUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://paxyo-bot-ywuk.onrender.com/api/sendToUser', { chatId, message, imageUrl });
+      const response = await axios.post('https://abiybot34.onrender.com/api/sendToUser', { chatId, message, imageUrl });
     //   alert(`Message sent to user with Chat ID: ${chatId}`);
       setMessageId(response.data.messageId);
       setChatId('');
@@ -53,7 +53,7 @@ function App() {
 
   const handleDeleteMessage = async () => {
     try {
-      await axios.post('https://paxyo-bot-ywuk.onrender.com/api/deleteMessage', { chatId, messageId });
+      await axios.post('https://abiybot34.onrender.com/api/deleteMessage', { chatId, messageId });
     //   alert('Message deleted successfully!');
       setMessageId('');
     } catch (error) {
@@ -64,7 +64,7 @@ function App() {
 
   const handleDeleteAllMessages = async () => {
     try {
-      await axios.post('https://paxyo-bot-ywuk.onrender.com/api/deleteAllMessages');
+      await axios.post('https://abiybot34.onrender.com/api/deleteAllMessages');
     //   alert('All broadcast messages deleted successfully!');
     } catch (error) {
       console.error('Failed to delete all messages:', error);
@@ -154,7 +154,7 @@ function App() {
 <form onSubmit={async (e) => {
   e.preventDefault();
   try {
-    await axios.post('https://paxyo-bot-ywuk.onrender.com/api/deleteByContent', {
+    await axios.post('https://abiybot34.onrender.com/api/deleteByContent', {
       message,
       imageUrl,
     });

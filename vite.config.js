@@ -8,7 +8,7 @@ export default defineConfig({
     plugins: [react()],
     server: {
         proxy: {
-            '/api': 'https://paxyo-bot-ywuk.onrender.com'
+            '/api': 'https://abiybot34.onrender.com'
         }
     }
 });
