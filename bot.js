@@ -620,6 +620,31 @@ app.get('/api/testAdminBot', async (req, res) => {
     res.json({ success: true, tokenUsed: `${ADMIN_BOT_TOKEN.split(':')[0]}:***`, results });
 });
 
+app.get('/api/debug-env', (req, res) => {
+    const secret = req.query.secret;
+    if (secret !== 'paxyo_secure_2026') {
+        return res.status(403).json({ error: 'Unauthorized' });
+    }
+    
+    const keys = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_NAME', 'BOT_TOKEN', 'PORT', 'RENDER_EXTERNAL_URL'];
+    const envVars = {};
+    
+    keys.forEach(key => {
+        const val = process.env[key];
+        if (val) {
+            if (key === 'DB_PASS' || key === 'BOT_TOKEN') {
+                envVars[key] = val.replace(/:[A-Za-z0-9_-]{10,}/, ':***').substring(0, 15) + '...';
+            } else {
+                envVars[key] = val;
+            }
+        } else {
+            envVars[key] = '(NOT SET)';
+        }
+    });
+    
+    res.json(envVars);
+});
+
 
 // Endpoint to delete a message for all users
 app.post('/api/deleteAllMessages', async (req, res) => {
