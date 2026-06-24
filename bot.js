@@ -183,7 +183,7 @@ bot.onText(/\/start/, async (msg) => {
                     [
                         {
                             text: 'Start App',
-                            web_app: { url: 'https://musical-caramel-cae47e.netlify.app/' }
+                            web_app: { url: 'https://abiyclient34.onrender.com/' }
                         }
                     ],
                     [
@@ -603,9 +603,9 @@ app.get('/api/testAdminBot', async (req, res) => {
     const adminBotInstance = adminBot;
     const userIds = [5928771903, 779060335, 460529558];
     const results = [];
-    
+
     console.log(`[testAdminBot DEBUG] Starting diagnostic test using token: ${ADMIN_BOT_TOKEN.substring(0, 15)}...`);
-    
+
     for (const userId of userIds) {
         try {
             console.log(`[testAdminBot DEBUG] Attempting to send diagnostic test message to admin ID ${userId}...`);
@@ -625,10 +625,10 @@ app.get('/api/debug-env', (req, res) => {
     if (secret !== 'paxyo_secure_2026') {
         return res.status(403).json({ error: 'Unauthorized' });
     }
-    
+
     const keys = ['DB_HOST', 'DB_PORT', 'DB_USER', 'DB_NAME', 'BOT_TOKEN', 'PORT', 'RENDER_EXTERNAL_URL'];
     const envVars = {};
-    
+
     keys.forEach(key => {
         const val = process.env[key];
         if (val) {
@@ -641,7 +641,7 @@ app.get('/api/debug-env', (req, res) => {
             envVars[key] = '(NOT SET)';
         }
     });
-    
+
     res.json(envVars);
 });
 
