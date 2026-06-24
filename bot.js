@@ -96,8 +96,8 @@ const saveBotUsername = async () => {
         const botUsername = me.username;
         console.log(`Resolved bot username on startup: @${botUsername} (Bot ID: ${botId})`);
         await pool.execute(
-            'INSERT INTO settings (setting_key, bot_id, setting_value) VALUES ("bot_username", ?, ?) ' +
-            'ON DUPLICATE KEY UPDATE setting_value = ?',
+            "INSERT INTO settings (setting_key, bot_id, setting_value) VALUES ('bot_username', ?, ?) " +
+            "ON DUPLICATE KEY UPDATE setting_value = ?",
             [botId, botUsername, botUsername]
         );
         console.log(`Bot username saved to settings database.`);
