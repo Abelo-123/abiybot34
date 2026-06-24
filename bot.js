@@ -719,7 +719,9 @@ app.listen(PORT, () => {
 
 const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || 'https://abiybot34.onrender.com';
 
-bot.setWebHook(`${WEBHOOK_URL}/bot${process.env.BOT_TOKEN}`);
+bot.setWebHook(`${WEBHOOK_URL}/bot${process.env.BOT_TOKEN}`).catch(err => {
+    console.error('Failed to set webhook:', err.message);
+});
 
 app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.processUpdate(req.body);
