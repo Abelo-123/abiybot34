@@ -583,12 +583,18 @@ app.post('/api/sendToJohn', async (req, res) => {
             }
 
             if (msgText) {
-                await adminBotInstance.sendMessage(userId, msgText, { parse_mode: 'HTML' });
+                try {
+                    console.log(`[sendToJohn DEBUG] Attempting to send message to admin ID ${userId}: "${msgText.replace(/\n/g, ' ')}"`);
+                    await adminBotInstance.sendMessage(userId, msgText, { parse_mode: 'HTML' });
+                    console.log(`[sendToJohn DEBUG SUCCESS] Message sent to admin ID ${userId}`);
+                } catch (sendErr) {
+                    console.error(`[sendToJohn DEBUG ERROR] Failed to send message to admin ID ${userId}:`, sendErr.message);
+                }
             }
         }
         res.send('Messages sent successfully'); // Return success response
     } catch (error) {
-        console.error(`Failed to send message to users:`, error.message);
+        console.error(`[sendToJohn GLOBAL ERROR] Failed to complete notification request:`, error.message);
         res.status(500).send('Failed to send message to users');
     }
 });
