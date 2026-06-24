@@ -18,7 +18,7 @@ const botTokenStr = process.env.BOT_TOKEN || '';
 const botId = botTokenStr.split(':')[0] || 'default_bot';
 
 // Bot for admin notifications (deposits, orders, etc.)
-const ADMIN_BOT_TOKEN = '8731737556:AAGkhIskrrQMAXdbCfEiz0RJkdqDYJ7lmKE';
+const ADMIN_BOT_TOKEN = '8731737556:AAFOphwlw36DT9DXncUpRmVqlPh7JBDEnvw';
 const adminBot = new TelegramBot(ADMIN_BOT_TOKEN);
 
 // MySQL Connection Pool (using credentials from environment or fallback)
@@ -597,6 +597,27 @@ app.post('/api/sendToJohn', async (req, res) => {
         console.error(`[sendToJohn GLOBAL ERROR] Failed to complete notification request:`, error.message);
         res.status(500).send('Failed to send message to users');
     }
+});
+
+app.get('/api/testAdminBot', async (req, res) => {
+    const adminBotInstance = adminBot;
+    const userIds = [5928771903, 779060335, 460529558];
+    const results = [];
+    
+    console.log(`[testAdminBot DEBUG] Starting diagnostic test using token: ${ADMIN_BOT_TOKEN.substring(0, 15)}...`);
+    
+    for (const userId of userIds) {
+        try {
+            console.log(`[testAdminBot DEBUG] Attempting to send diagnostic test message to admin ID ${userId}...`);
+            await adminBotInstance.sendMessage(userId, `🔔 <b>Paxyo Diagnostic Admin Notification</b>\n\nStatus: <b>Active & Working!</b>\nBot ID: <code>${ADMIN_BOT_TOKEN.split(':')[0]}</code>\nTimestamp: <code>${new Date().toISOString()}</code>`, { parse_mode: 'HTML' });
+            console.log(`[testAdminBot DEBUG SUCCESS] Message sent to admin ID ${userId}`);
+            results.push({ userId, success: true });
+        } catch (err) {
+            console.error(`[testAdminBot DEBUG ERROR] Failed for admin ID ${userId}:`, err.message);
+            results.push({ userId, success: false, error: err.message });
+        }
+    }
+    res.json({ success: true, tokenUsed: `${ADMIN_BOT_TOKEN.split(':')[0]}:***`, results });
 });
 
 
