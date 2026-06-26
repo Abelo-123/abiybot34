@@ -169,13 +169,12 @@ bot.onText(/\/start/, async (msg) => {
 
     // ✅ Send welcome image with Start App button (ALWAYS shown)
     try {
-        const welcomeText = `👋 <b>Hey, welcome aboard ${firstName || 'friend'}!</b> 🇪🇹\n\n` +
-            `You've just unlocked a space built for creators, dreamers and doers.\n\n` +
-            `👥 Followers, 🎥 views, 💬 members እንዲሁም ከ750+ አገልግሎት ለሁሉም ሶሻል ሚዲያ በማይገመት ዋጋ።\n\n` +
-            `ስለ አገልግሎቱ አዳዲስ መረጃ እንዲደርስዎ የቴሌግራም ቻናላችን ይቀላቀሉ።\n` +
-            `📌 Updates: <a href="https://t.me/paxyo251">t.me/paxyo251</a>`;
+        const welcomeText = `👋 <b>👋 Welcome to Ziviop!</b> \n\n` +
+            `Grow your social media faster with high-quality, affordable services. 🚀\n\n` +
+            `Choose a service, place your order, and watch your account grow automatically. Thanks for choosing Ziviop!`;
 
-        await bot.sendPhoto(chatId, 'https://i.ibb.co/nsW64qKb/pop.jpg', {
+
+        await bot.sendPhoto(chatId, 'https://i.ibb.co/zWfzvDCY/n.jpg', {
             caption: welcomeText,
             parse_mode: 'HTML',
             reply_markup: {
@@ -184,12 +183,6 @@ bot.onText(/\/start/, async (msg) => {
                         {
                             text: 'Start App',
                             web_app: { url: 'https://abiyclient34.onrender.com/' }
-                        }
-                    ],
-                    [
-                        {
-                            text: 'How to order',
-                            callback_data: 'how_to_order'
                         }
                     ]
                 ]
