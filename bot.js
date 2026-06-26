@@ -169,8 +169,8 @@ bot.onText(/\/start/, async (msg) => {
 
     // ✅ Send welcome image with Start App button (ALWAYS shown)
     try {
-        const welcomeText = `👋 <b>👋 Welcome to Ziviop!</b> \n\n` +
-            `Grow your social media faster with high-quality, affordable services. 🚀\n\n` +
+        const welcomeText = ` <b>👋 Welcome to Ziviop!</b> \n\n` +
+            `Grow your social media faster with high-quality, affordable services🚀\n\n` +
             `Choose a service, place your order, and watch your account grow automatically. Thanks for choosing Ziviop!`;
 
 
