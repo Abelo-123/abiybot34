@@ -18,7 +18,7 @@ const botTokenStr = process.env.BOT_TOKEN || '';
 const botId = botTokenStr.split(':')[0] || 'default_bot';
 
 // Bot for admin notifications (deposits, orders, etc.)
-const ADMIN_BOT_TOKEN = '8731737556:AAFOphwlw36DT9DXncUpRmVqlPh7JBDEnvw';
+const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || '8968588721:AAGw4T4NOv-YKB-6R39WRVPtWuMYaoxCe_c';
 const adminBot = new TelegramBot(ADMIN_BOT_TOKEN);
 
 // MySQL Connection Pool (using credentials from environment or fallback)
@@ -182,7 +182,7 @@ bot.onText(/\/start/, async (msg) => {
                     [
                         {
                             text: 'Start App',
-                            web_app: { url: 'https://abiyclient34.onrender.com/' }
+                            web_app: { url: process.env.MINI_APP_URL || 'https://primora-client.onrender.com' }
                         }
                     ]
                 ]
@@ -195,7 +195,7 @@ bot.onText(/\/start/, async (msg) => {
         // Minimal fallback
         await bot.sendMessage(chatId, `👋 Welcome! Launch App here:`, {
             reply_markup: {
-                inline_keyboard: [[{ text: '🦾 Open App', web_app: { url: 'https://musical-caramel-cae47e.netlify.app/' } }]]
+                inline_keyboard: [[{ text: '🦾 Open App', web_app: { url: 'https://primora-client.onrender.com' } }]]
             }
         }).catch(e => console.error('Fallback fail:', e.message));
     }
@@ -225,7 +225,7 @@ bot.on('contact', async (msg) => {
             parse_mode: 'HTML',
             reply_markup: {
                 inline_keyboard: [[
-                    { text: '🦾 Launch SMM App', web_app: { url: 'https://musical-caramel-cae47e.netlify.app/' } }
+                    { text: '🦾 Launch SMM App', web_app: { url: 'https://primora-client.onrender.com' } }
                 ]]
             }
         });
@@ -246,7 +246,7 @@ bot.on('message', async (msg) => {
             parse_mode: 'HTML',
             reply_markup: {
                 inline_keyboard: [[
-                    { text: '🦾 Launch SMM App', web_app: { url: 'https://musical-caramel-cae47e.netlify.app/' } }
+                    { text: '🦾 Launch SMM App', web_app: { url: 'https://primora-client.onrender.com' } }
                 ]]
             }
         });
@@ -283,7 +283,7 @@ const sendTelegramMessage = async (chatId, text, imageUrl, type, amount, uid, ti
                         [
                             {
                                 text: '🦾 Open App',
-                                web_app: { url: 'https://musical-caramel-cae47e.netlify.app/' }
+                                web_app: { url: 'https://primora-client.onrender.com' }
                             }
                         ]
                     ]
@@ -299,7 +299,7 @@ const sendTelegramMessage = async (chatId, text, imageUrl, type, amount, uid, ti
                             [
                                 {
                                     text: '🦾 Open App',
-                                    web_app: { url: 'https://musical-caramel-cae47e.netlify.app/' }
+                                    web_app: { url: 'https://primora-client.onrender.com' }
 
                                 }
                             ]
@@ -360,7 +360,7 @@ const broadcastMessage = async (text, imageUrl) => {
                         [
                             {
                                 text: 'Open App',
-                                web_app: { url: 'https://musical-caramel-cae47e.netlify.app/' }
+                                web_app: { url: 'https://primora-client.onrender.com' }
                             }
                         ]
                     ]
@@ -735,7 +735,7 @@ app.listen(PORT, () => {
 });
 
 
-const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || 'https://abiybot34.onrender.com';
+const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || 'https://primore-bot.onrender.com';
 
 bot.setWebHook(`${WEBHOOK_URL}/bot${process.env.BOT_TOKEN}`).catch(err => {
     console.error('Failed to set webhook:', err.message);
