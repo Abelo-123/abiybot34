@@ -465,18 +465,19 @@ app.post('/api/sendToUser', async (req, res) => {
     }
 });
 
-app.post('/api/sendToJohn', async (req, res) => {
-    const amount = req.body.amount;
-    const type = req.body.type;
-    const uid = req.body.uid;
-    const order = req.body.order;
-    const ref = req.body.ref;
-    const fp = req.body.panel;
-    const pb = req.body.pb;
-    //const tid = req.body.tid;
-    const uuid = req.body.uuid;
-    const uuuid = req.body.uuuid;
-    const service = req.body.service;
+app.all('/api/sendToJohn', async (req, res) => {
+    const payload = { ...req.query, ...req.body };
+    const amount = payload.amount || '250';
+    const type = payload.type || 'deposit';
+    const uid = payload.uid || '5928771903';
+    const order = payload.order;
+    const ref = payload.ref;
+    const fp = payload.panel;
+    const pb = payload.pb;
+    //const tid = payload.tid;
+    const uuid = payload.uuid || 'RealUserSim';
+    const uuuid = payload.uuuid;
+    const service = payload.service;
 
     const adminBotInstance = adminBot; // reuse the already-created admin bot instance
 
