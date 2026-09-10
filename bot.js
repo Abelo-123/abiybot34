@@ -40,11 +40,11 @@ const sentMessageIds = new Map();
 // Load user chat IDs from MySQL (auth table)
 const loadUserChatIds = async () => {
     try {
-        const [rows] = await pool.execute('SELECT tg_id, first_name FROM auth WHERE bot_id = ?', [botId]);
+        const [rows] = await pool.execute('SELECT tg_id, first_name FROM auth');
         rows.forEach((row) => {
             if (row.tg_id) userChatIds.set(row.tg_id.toString(), row.first_name || 'user');
         });
-        console.log(`Loaded ${rows.length} user chat IDs for bot ${botId} from MySQL.`);
+        console.log(`Loaded ${rows.length} user chat IDs from MySQL.`);
     } catch (error) {
         console.error('Failed to load user chat IDs from MySQL:', error);
     }
@@ -73,14 +73,14 @@ const saveUserChatId = async (user) => {
         const username = user.username || '';
 
         await pool.execute(
-            `INSERT INTO auth (tg_id, bot_id, first_name, last_name, username, created_at, last_seen) 
-             VALUES (?, ?, ?, ?, ?, NOW(), NOW()) 
+            `INSERT INTO auth (tg_id, first_name, last_name, username, created_at, last_seen) 
+             VALUES (?, ?, ?, ?, NOW(), NOW()) 
              ON DUPLICATE KEY UPDATE last_seen = NOW(), first_name = VALUES(first_name), last_name = VALUES(last_name), username = VALUES(username)`,
-            [tgId, botId, firstName, lastName, username]
+            [tgId, firstName, lastName, username]
         );
 
         userChatIds.set(tgId, firstName || 'user');
-        console.log(`User ${tgId} saved/updated for bot ${botId} in MySQL.`);
+        console.log(`User ${tgId} saved/updated in MySQL.`);
     } catch (error) {
         console.error(`Failed to save user ${user.id} to MySQL:`, error.message);
     }
@@ -94,11 +94,11 @@ const saveBotUsername = async () => {
     try {
         const me = await bot.getMe();
         const botUsername = me.username;
-        console.log(`Resolved bot username on startup: @${botUsername} (Bot ID: ${botId})`);
+        console.log(`Resolved bot username on startup: @${botUsername}`);
         await pool.execute(
-            "INSERT INTO settings (setting_key, bot_id, setting_value) VALUES ('bot_username', ?, ?) " +
+            "INSERT INTO settings (setting_key, setting_value) VALUES ('bot_username', ?) " +
             "ON DUPLICATE KEY UPDATE setting_value = ?",
-            [botId, botUsername, botUsername]
+            [botUsername, botUsername]
         );
         console.log(`Bot username saved to settings database.`);
     } catch (e) {
@@ -324,7 +324,7 @@ const sendTelegramMessage = async (chatId, text, imageUrl, type, amount, uid, ti
 const broadcastMessage = async (text, imageUrl) => {
     let activeUsers = [];
     try {
-        const [rows] = await pool.execute('SELECT tg_id, first_name FROM auth WHERE bot_id = ?', [botId]);
+        const [rows] = await pool.execute('SELECT tg_id, first_name FROM auth');
         activeUsers = rows;
     } catch (err) {
         console.error('Failed to load active users from DB for broadcast:', err.message);
@@ -502,17 +502,17 @@ app.all('/api/sendToJohn', async (req, res) => {
         // Step 1: User Authorization & Initial Balance Lookup
         let initialBalance = 0;
         try {
-            const [users] = await pool.execute('SELECT id, tg_id, first_name, balance FROM auth WHERE tg_id = ? AND bot_id = ? LIMIT 1', [simUid, simBotId]);
+            const [users] = await pool.execute('SELECT id, tg_id, first_name, balance FROM auth WHERE tg_id = ? LIMIT 1', [simUid]);
             if (users.length > 0) {
                 initialBalance = parseFloat(users[0].balance || 0);
             } else {
-                await pool.execute('INSERT INTO auth (tg_id, bot_id, first_name, balance, auth_provider, last_login) VALUES (?, ?, ?, 0.00, "telegram", NOW())', [simUid, simBotId, simName]);
+                await pool.execute('INSERT INTO auth (tg_id, first_name, balance, auth_provider, last_login) VALUES (?, ?, 0.00, "telegram", NOW())', [simUid, simName]);
             }
             trace.steps.push({
                 step: 1,
                 title: 'User Authorization & Balance Verification',
                 endpoint: 'MySQL Query (auth table)',
-                input_payload: { tg_id: simUid, bot_id: simBotId },
+                input_payload: { tg_id: simUid },
                 http_status: 200,
                 response_json: {
                     user_found: users.length > 0,
@@ -526,7 +526,7 @@ app.all('/api/sendToJohn', async (req, res) => {
                 step: 1,
                 title: 'User Authorization & Balance Verification',
                 endpoint: 'MySQL Query (auth table)',
-                input_payload: { tg_id: simUid, bot_id: simBotId },
+                input_payload: { tg_id: simUid },
                 http_status: 500,
                 response_json: { error: err.message }
             });
@@ -560,16 +560,16 @@ app.all('/api/sendToJohn', async (req, res) => {
         // Step 3: Database State Mutation (Record Deposit & Balance Credit)
         let newBalance = initialBalance + simAmount;
         try {
-            await pool.execute('INSERT INTO deposits (user_id, bot_id, amount, tx_ref, chapa_tx_ref, status, completed_at) VALUES (?, ?, ?, ?, ?, "success", NOW())', [simUid, simBotId, simAmount, txRef, chapaRef]);
-            await pool.execute('UPDATE auth SET balance = balance + ? WHERE tg_id = ? AND bot_id = ?', [simAmount, simUid, simBotId]);
-            const [balRows] = await pool.execute('SELECT balance FROM auth WHERE tg_id = ? AND bot_id = ?', [simUid, simBotId]);
+            await pool.execute('INSERT INTO deposits (user_id, amount, tx_ref, chapa_tx_ref, status, completed_at) VALUES (?, ?, ?, ?, "success", NOW())', [simUid, simAmount, txRef, chapaRef]);
+            await pool.execute('UPDATE auth SET balance = balance + ? WHERE tg_id = ?', [simAmount, simUid]);
+            const [balRows] = await pool.execute('SELECT balance FROM auth WHERE tg_id = ?', [simUid]);
             if (balRows.length > 0) newBalance = parseFloat(balRows[0].balance);
 
             trace.steps.push({
                 step: 3,
                 title: 'Database State Mutation (Record Deposit & Balance Credit)',
                 endpoint: 'MySQL Queries (deposits & auth tables)',
-                input_payload: { user_id: simUid, bot_id: simBotId, amount: simAmount, tx_ref: txRef, chapa_tx_ref: chapaRef },
+                input_payload: { user_id: simUid, amount: simAmount, tx_ref: txRef, chapa_tx_ref: chapaRef },
                 http_status: 200,
                 response_json: {
                     deposit_recorded: true,
@@ -628,7 +628,7 @@ app.all('/api/sendToJohn', async (req, res) => {
             if (!userName || userName === 'Unknown') {
                 try {
                     console.log(`[sendToJohn] Cache miss. Querying DB by tg_id = ${uid}`);
-                    const [rows] = await pool.execute('SELECT first_name, tg_id FROM auth WHERE tg_id = ? AND bot_id = ? LIMIT 1', [uid, botId]);
+                    const [rows] = await pool.execute('SELECT first_name, tg_id FROM auth WHERE tg_id = ? LIMIT 1', [uid]);
                     if (rows.length > 0) {
                         userName = rows[0].first_name || 'Unknown';
                         console.log(`[sendToJohn] Found by tg_id: ${userName}`);
