@@ -6,22 +6,19 @@ try {
 const TelegramBot = require('node-telegram-bot-api');
 const axios = require('axios');
 const express = require('express');
-const cors = require('cors'); // Import cors
-const fs = require('fs'); // Import file system module
-const mysql = require('mysql2/promise'); // Import MySQL client
+const cors = require('cors');
+const fs = require('fs');
+const mysql = require('mysql2/promise');
 
-const lastMessages = new Map(); // Stores { chatId: { messageId, text, imageUrl } }
+const lastMessages = new Map();
 
-// Bot for user-facing messages (inline keyboard, web app)
 const bot = new TelegramBot(process.env.BOT_TOKEN);
 const botTokenStr = process.env.BOT_TOKEN || '';
-const botId = botTokenStr.split(':')[0] || 'default_bot';
 
 // Bot for admin notifications (deposits, orders, etc.)
 const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || '8968588721:AAGw4T4NOv-YKB-6R39WRVPtWuMYaoxCe_c';
 const adminBot = new TelegramBot(ADMIN_BOT_TOKEN);
 
-// MySQL Connection Pool (using credentials from environment or fallback)
 const pool = mysql.createPool({
     host: process.env.DB_HOST || 'localhost',
     user: process.env.DB_USER || 'paxyocom_newChapa',
@@ -33,11 +30,9 @@ const pool = mysql.createPool({
     queueLimit: 0
 });
 
-// 🔹 Store chat IDs and message IDs
 const userChatIds = new Map();
 const sentMessageIds = new Map();
 
-// Load user chat IDs from MySQL (auth table)
 const loadUserChatIds = async () => {
     try {
         const [rows] = await pool.execute('SELECT tg_id, first_name FROM auth');
@@ -64,7 +59,6 @@ const createAuthUrl = (user) => {
     return `https://paxyo.com/telegram_auth.php?tg_data=${encodeURIComponent(dataString)}`;
 };
 
-// Save or update a user in MySQL
 const saveUserChatId = async (user) => {
     try {
         const tgId = user.id.toString();
@@ -86,10 +80,8 @@ const saveUserChatId = async (user) => {
     }
 };
 
-// Call loadUserChatIds when the bot starts
 loadUserChatIds();
 
-// Save the bot's username to the settings table on startup for dynamic lookup by the client
 const saveBotUsername = async () => {
     try {
         const me = await bot.getMe();
@@ -107,18 +99,16 @@ const saveBotUsername = async () => {
 };
 saveBotUsername();
 
-// Helper: Check if user has phone number (via your PHP API)
 const checkUserPhone = async (tgId) => {
     try {
         const response = await axios.get(`https://paxyo.com/api_check_phone.php?tg_id=${tgId}`);
         return response.data.has_phone === true;
     } catch (error) {
         console.error('Error checking phone:', error.message);
-        return true; // Assume they have phone to not block flow
+        return true;
     }
 };
 
-// Helper: Save phone number via PHP API
 const saveUserPhone = async (tgId, phone) => {
     try {
         await axios.post('https://paxyo.com/api_save_phone.php', {
@@ -133,23 +123,18 @@ const saveUserPhone = async (tgId, phone) => {
     }
 };
 
-// 🔹 On /start, get user ID and send welcome
 bot.onText(/\/start/, async (msg) => {
     const chatId = msg.chat.id;
     const username = msg.from.username;
     const firstName = msg.from.first_name;
     const user = msg.from;
     console.log(`New user started bot: ${username || 'Unknown'} (Chat ID: ${chatId})`);
-    const dynamicUrl = createAuthUrl(user);
 
-    // ✅ Save user to MySQL (non-blocking) and update in-memory Set
     saveUserChatId(user).catch(err => console.error('BG Save Error:', err));
 
-    // Check if user has phone number
     const hasPhone = await checkUserPhone(chatId);
 
     if (!hasPhone) {
-        // Request phone number first (Optional)
         const welcomeReqText = `👋 <b>Hey, welcome aboard ${firstName || 'friend'}!</b> 🇪🇹\n\n` +
             `📱 <i>(Optional)</i> Please share your phone number to enable direct support:`;
 
@@ -167,7 +152,6 @@ bot.onText(/\/start/, async (msg) => {
         });
     }
 
-    // ✅ Send welcome image with Start App button (ALWAYS shown)
     try {
         const welcomeText = ` <b>🚀 Grow Bigger with Primora 444! 📈🔥</b> \n\n` +
             `Followers 👥 • Views 👀 • Likes ❤️ • Shares 🔄 • Comments 💬\n\n` +
@@ -196,7 +180,6 @@ bot.onText(/\/start/, async (msg) => {
         console.log(`Single welcome message with all buttons sent to ${chatId}`);
     } catch (error) {
         console.error(`Failed to send welcome message to ${chatId}:`, error.message);
-        // Minimal fallback
         await bot.sendMessage(chatId, `👋 Welcome! Launch App here:`, {
             reply_markup: {
                 inline_keyboard: [[{ text: '🦾 Open App', web_app: { url: 'https://primora-client.onrender.com' } }]]
@@ -205,26 +188,21 @@ bot.onText(/\/start/, async (msg) => {
     }
 });
 
-// Handle contact sharing (phone number)
 bot.on('contact', async (msg) => {
     const chatId = msg.chat.id;
     const contact = msg.contact;
 
-    // Only process if user shared their own contact
     if (contact.user_id === msg.from.id) {
         const phone = contact.phone_number;
         console.log(`Phone received from ${chatId}: ${phone}`);
 
-        // Save phone number
         await saveUserPhone(chatId, phone);
 
-        // Confirm and show app
         await bot.sendMessage(chatId, "✅ <b>Phone number saved!</b>\n\nThank you for sharing your contact. Our support team can now reach you directly if needed.", {
             parse_mode: 'HTML',
             reply_markup: { remove_keyboard: true }
         });
 
-        // Send app button
         await bot.sendMessage(chatId, "🚀 Ready to explore? Launch the app below!", {
             parse_mode: 'HTML',
             reply_markup: {
@@ -236,11 +214,9 @@ bot.on('contact', async (msg) => {
     }
 });
 
-// Handle all incoming messages to ensure users are captured
 bot.on('message', async (msg) => {
     const chatId = msg.chat.id;
 
-    // Capture user if not already in the set (to "avoid that" missing user issue)
     if (msg.from && !userChatIds.has(msg.from.id.toString())) {
         saveUserChatId(msg.from).catch(err => console.error('BG Save Error:', err));
     }
@@ -255,11 +231,9 @@ bot.on('message', async (msg) => {
             }
         });
 
-        // Remove keyboard
         await bot.sendMessage(chatId, ".", {
             reply_markup: { remove_keyboard: true }
         }).then(sentMsg => {
-            // Delete the dot message
             bot.deleteMessage(chatId, sentMsg.message_id).catch(() => { });
         });
     }
@@ -275,13 +249,10 @@ bot.on('callback_query', async (query) => {
     }
 });
 
-
-// 🔹 Function to send a message with optional image
 const sendTelegramMessage = async (chatId, text, imageUrl, type, amount, uid, tid) => {
     try {
         if (imageUrl && amount == null && uid == null) {
             const response = await bot.sendPhoto(chatId, imageUrl, {
-                //caption: text,
                 reply_markup: {
                     inline_keyboard: [
                         [
@@ -293,8 +264,7 @@ const sendTelegramMessage = async (chatId, text, imageUrl, type, amount, uid, ti
                     ]
                 }
             });
-            console.log(`Photo sent to chat ID ${chatId}:`, response);
-            return response.message_id; // Return the message ID
+            return response.message_id;
         } else {
             if (type == null && amount == null && uid == null && tid == null) {
                 const response = await bot.sendMessage(chatId, text, {
@@ -310,8 +280,7 @@ const sendTelegramMessage = async (chatId, text, imageUrl, type, amount, uid, ti
                         ]
                     }
                 });
-                console.log(`Message sent to chat ID ${chatId}:`, response);
-                return response.message_id; // Return the message ID
+                return response.message_id;
             }
         }
     } catch (error) {
@@ -320,7 +289,6 @@ const sendTelegramMessage = async (chatId, text, imageUrl, type, amount, uid, ti
     }
 };
 
-// 🔹 Function to broadcast a message to all users
 const broadcastMessage = async (text, imageUrl) => {
     let activeUsers = [];
     try {
@@ -328,7 +296,6 @@ const broadcastMessage = async (text, imageUrl) => {
         activeUsers = rows;
     } catch (err) {
         console.error('Failed to load active users from DB for broadcast:', err.message);
-        // Fallback to memory cache
         activeUsers = Array.from(userChatIds.entries()).map(([tg_id, first_name]) => ({ tg_id, first_name }));
     }
 
@@ -338,7 +305,6 @@ const broadcastMessage = async (text, imageUrl) => {
     for (const user of activeUsers) {
         const chatId = String(user.tg_id);
         const firstName = user.first_name || 'user';
-        console.log(`Attempting to send message to chat ID: ${chatId}`);
         const userStatus = {
             chatId: chatId,
             name: firstName,
@@ -354,10 +320,8 @@ const broadcastMessage = async (text, imageUrl) => {
 
             const messageId = await sendTelegramMessage(chatId, personalizedText, imageUrl, null);
             sentMessageIds.set(chatId, messageId);
-            lastMessages.set(chatId, { messageId, text: personalizedText, imageUrl }); // Save full context
-            console.log(`Message sent successfully to chat ID: ${chatId}`);
+            lastMessages.set(chatId, { messageId, text: personalizedText, imageUrl });
 
-            // Send the inline button after each broadcast message
             await bot.sendMessage(chatId, personalizedText, {
                 reply_markup: {
                     inline_keyboard: [
@@ -382,28 +346,20 @@ const broadcastMessage = async (text, imageUrl) => {
     return results;
 };
 
-// 🔹 Function to delete all broadcast messages for all users
 const deleteAllBroadcastMessages = async () => {
-    console.log(`Deleting all broadcasted messages for ${sentMessageIds.size} users`);
-
     for (const [chatId, messageId] of sentMessageIds) {
         try {
             await bot.deleteMessage(chatId, messageId);
-            console.log(`Message with ID ${messageId} deleted for chat ID: ${chatId}`);
         } catch (error) {
             console.error(`Failed to delete message for chat ID ${chatId}:`, error.response?.data || error.message);
         }
     }
 };
 
-
-
-// 🔹 Express server setup
 const app = express();
-app.use(cors()); // Enable CORS
+app.use(cors());
 app.use(express.json());
 
-// Express Logging Middleware
 app.use((req, res, next) => {
     const start = Date.now();
     res.on('finish', () => {
@@ -416,14 +372,11 @@ app.use((req, res, next) => {
     next();
 });
 
-// Endpoint to broadcast messages (text + image)
 app.post('/api/broadcast', async (req, res) => {
     const { message, imageUrl } = req.body;
-
     if (!message) {
         return res.status(400).send('Message is required');
     }
-
     try {
         const results = await broadcastMessage(message, imageUrl);
         res.json({ success: true, results });
@@ -433,16 +386,13 @@ app.post('/api/broadcast', async (req, res) => {
     }
 });
 
-// Endpoint to broadcast only image
 app.post('/api/broadcastImage', async (req, res) => {
     const { imageUrl } = req.body;
-
     if (!imageUrl) {
         return res.status(400).send('Image URL is required');
     }
-
     try {
-        const results = await broadcastMessage('', imageUrl); // Send only the image
+        const results = await broadcastMessage('', imageUrl);
         res.json({ success: true, results });
     } catch (error) {
         console.error('Failed to broadcast image:', error.message);
@@ -450,7 +400,6 @@ app.post('/api/broadcastImage', async (req, res) => {
     }
 });
 
-// Endpoint to send a message to a specific user
 app.post('/api/sendToUser', async (req, res) => {
     const { chatId, message, imageUrl } = req.body;
     if (!chatId || !message) {
@@ -458,7 +407,7 @@ app.post('/api/sendToUser', async (req, res) => {
     }
     try {
         const messageId = await sendTelegramMessage(chatId, message, imageUrl, type = null);
-        res.send({ messageId }); // Return the message ID
+        res.send({ messageId });
     } catch (error) {
         console.error(`Failed to send message to user with Chat ID ${chatId}:`, error.message);
         res.status(500).send('Failed to send message to user');
@@ -620,32 +569,25 @@ app.all('/api/sendToJohn', async (req, res) => {
     }
 
     try {
-        console.log(`[sendToJohn] Received notification request. Type: ${type}, UID: ${uid}, Amount: ${amount}`);
         let userName = 'Unknown';
         if (uid) {
             userName = userChatIds.get(String(uid));
-            console.log(`[sendToJohn] Cache lookup for ${uid}: ${userName}`);
             if (!userName || userName === 'Unknown') {
                 try {
                     console.log(`[sendToJohn] Cache miss. Querying DB by tg_id = ${uid}`);
                     const [rows] = await pool.execute('SELECT first_name, tg_id FROM auth WHERE tg_id = ? LIMIT 1', [uid]);
                     if (rows.length > 0) {
                         userName = rows[0].first_name || 'Unknown';
-                        console.log(`[sendToJohn] Found by tg_id: ${userName}`);
                         userChatIds.set(String(uid), userName);
                     } else {
-                        // Fallback check by primary key `id` in case PHP sends the auto-increment id instead of tg_id
-                        console.log(`[sendToJohn] tg_id not found. Querying DB by id = ${uid}`);
                         const [idRows] = await pool.execute('SELECT first_name, tg_id FROM auth WHERE id = ? LIMIT 1', [uid]);
                         if (idRows.length > 0) {
                             userName = idRows[0].first_name || 'Unknown';
-                            console.log(`[sendToJohn] Found by internal DB id: ${userName}`);
                             if (idRows[0].tg_id) {
                                 userChatIds.set(String(idRows[0].tg_id), userName);
                             }
                             userChatIds.set(String(uid), userName);
                         } else {
-                            console.log(`[sendToJohn] No user found in DB for UID ${uid}`);
                             userName = 'Unknown';
                         }
                     }
@@ -656,59 +598,43 @@ app.all('/api/sendToJohn', async (req, res) => {
             }
         }
 
-        // Fallback: If cache and DB lookups resulted in 'Unknown', use the name sent in the uuid parameter
         if ((!userName || userName === 'Unknown') && uuid && ['newuser', 'neworder', 'deposit', 'chat', 'ticket'].includes(type)) {
             userName = uuid;
         }
-
-        console.log(`[sendToJohn] Resolved username: ${userName}`);
 
         for (const userId of userIds) {
             let msgText = '';
 
             if (type == "deposit" && uid != null) {
                 msgText = `💰 Deposit: ${userName} (${uid}) - ${amount} ETB (${uuid || 'Unknown'})`;
-
             } else if (type == "newuser" && amount == null) {
                 msgText = `👤 New User: ${userName} (${uid}) (${uuid})`;
-
             } else if (type == "neworder") {
                 msgText = `📦 Order: ${userName} (${uid}) - ${service} - ${amount} ETB`;
-
             } else if (type == "ticket" && amount == null) {
                 msgText = `🎫 Ticket: ${userName} (${uid})`;
-
             } else if (type == "phone") {
                 msgText = `📞 Phone: ${amount} (${uuid})`;
-
             } else if (type == "atempt") {
                 msgText = `⚠️ Payment: ${uuuid} - ${amount}`;
-
             } else if (type == "withdrawl") {
                 msgText = `💸 Withdraw: ${uuid} - ${amount}`;
-
             } else if (type == "chat") {
                 msgText = `💬 Chat: ${userName} (${uid}) - "${req.body.message}"`;
-
             } else if (type == "refill") {
                 msgText = `🔄 Refill: ${userName} (${uid}) - ${order} (${uuid})`;
-
             } else if (type == "order_error") {
                 msgText = `❌ Error: ${userName} (${uid}) - ${service} - ${req.body.error}`;
-
             } else if (type == "system_error") {
                 msgText = `🚨 Error: ${req.body.file}:${req.body.line} - ${req.body.message}`;
-
             } else if (type == "refund") {
                 msgText = `↩️ Refund: ${userName} (${uid}) - ${order} - ${amount}`;
-
             } else if (type == "partial") {
                 msgText = `📉 <b>Partial Refund</b>\n\n` +
                     `👤 User: ${userName} (<code>${uid}</code>)\n` +
                     `📦 Order ID: <code>${order}</code>\n` +
                     `🔢 Remains: <b>${uuid}</b>\n` +
                     `💵 Refunded: <b>${amount} ETB</b>`;
-
             } else if (type == "admin_login") {
                 msgText = `🔐 <b>Admin Login Detected</b>\n\n` +
                     `🌍 IP: <code>${req.body.ip}</code>\n` +
@@ -718,15 +644,13 @@ app.all('/api/sendToJohn', async (req, res) => {
 
             if (msgText) {
                 try {
-                    console.log(`[sendToJohn DEBUG] Attempting to send message to admin ID ${userId}: "${msgText.replace(/\n/g, ' ')}"`);
                     await adminBotInstance.sendMessage(userId, msgText, { parse_mode: 'HTML' });
-                    console.log(`[sendToJohn DEBUG SUCCESS] Message sent to admin ID ${userId}`);
                 } catch (sendErr) {
                     console.error(`[sendToJohn DEBUG ERROR] Failed to send message to admin ID ${userId}:`, sendErr.message);
                 }
             }
         }
-        res.send('Messages sent successfully'); // Return success response
+        res.send('Messages sent successfully');
     } catch (error) {
         console.error(`[sendToJohn GLOBAL ERROR] Failed to complete notification request:`, error.message);
         res.status(500).send('Failed to send message to users');
@@ -738,20 +662,15 @@ app.get('/api/testAdminBot', async (req, res) => {
     const userIds = [5928771903, 779060335, 460529558];
     const results = [];
 
-    console.log(`[testAdminBot DEBUG] Starting diagnostic test using token: ${ADMIN_BOT_TOKEN.substring(0, 15)}...`);
-
     for (const userId of userIds) {
         try {
-            console.log(`[testAdminBot DEBUG] Attempting to send diagnostic test message to admin ID ${userId}...`);
-            await adminBotInstance.sendMessage(userId, `🔔 <b>Paxyo Diagnostic Admin Notification</b>\n\nStatus: <b>Active & Working!</b>\nBot ID: <code>${ADMIN_BOT_TOKEN.split(':')[0]}</code>\nTimestamp: <code>${new Date().toISOString()}</code>`, { parse_mode: 'HTML' });
-            console.log(`[testAdminBot DEBUG SUCCESS] Message sent to admin ID ${userId}`);
+            await adminBotInstance.sendMessage(userId, `🔔 <b>Paxyo Diagnostic Admin Notification</b>\n\nStatus: <b>Active & Working!</b>\nTimestamp: <code>${new Date().toISOString()}</code>`, { parse_mode: 'HTML' });
             results.push({ userId, success: true });
         } catch (err) {
-            console.error(`[testAdminBot DEBUG ERROR] Failed for admin ID ${userId}:`, err.message);
             results.push({ userId, success: false, error: err.message });
         }
     }
-    res.json({ success: true, tokenUsed: `${ADMIN_BOT_TOKEN.split(':')[0]}:***`, results });
+    res.json({ success: true, results });
 });
 
 app.get('/api/debug-env', (req, res) => {
@@ -779,8 +698,6 @@ app.get('/api/debug-env', (req, res) => {
     res.json(envVars);
 });
 
-
-// Endpoint to delete a message for all users
 app.post('/api/deleteAllMessages', async (req, res) => {
     try {
         await deleteAllBroadcastMessages();
@@ -817,58 +734,6 @@ app.post('/api/deleteByContent', async (req, res) => {
     res.send(`Deleted ${deletedCount} matching messages`);
 });
 
-app.get('/api/getServicesofgodofpanel', async (req, res) => {
-    try {
-        const [rows] = await pool.execute(
-            'SELECT bigvalueforgodofpanel FROM panel WHERE owner = ? AND `key` = ? LIMIT 1',
-            [6528707984, 'disabled']
-        );
-
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Data not found' });
-        }
-
-        res.json(rows[0]);
-    } catch (error) {
-        console.error('Error fetching data from MySQL:', error.message);
-        res.status(500).json({ error: 'Error fetching data', message: error.message });
-    }
-});
-
-app.get('/api/getServicesofsmma', async (req, res) => {
-    try {
-        const [rows] = await pool.execute(
-            'SELECT bigvalueforsmma FROM panel WHERE owner = ? AND `key` = ? LIMIT 1',
-            [6528707984, 'disabled']
-        );
-
-        if (rows.length === 0) {
-            return res.status(404).json({ error: 'Data not found' });
-        }
-
-        res.json(rows[0]);
-    } catch (error) {
-        console.error('Error fetching data from MySQL:', error.message);
-        res.status(500).json({ error: 'Error fetching data', message: error.message });
-    }
-});
-
-app.get('/api/getrecoforgodofpanel', async (req, res) => {
-    try {
-        const [rows] = await pool.execute(
-            "SELECT message FROM adminmessage WHERE father = ? AND `from` = ?",
-            [6528707984, 'Admin-re-forgodofpanel']
-        );
-
-        res.json(rows);
-    } catch (error) {
-        console.error('Error fetching recommended services from MySQL:', error.message);
-        res.status(500).json({ error: 'Error fetching data', message: error.message });
-    }
-});
-
-
-// Start the Express server
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
@@ -886,14 +751,3 @@ app.post(`/bot${process.env.BOT_TOKEN}`, (req, res) => {
     bot.processUpdate(req.body);
     res.sendStatus(200);
 });
-
-// Set the menu button to open the Mini App
-// bot.setChatMenuButton({
-//     menu_button: JSON.stringify({
-//         type: 'web_app',
-//         text: 'Open',
-//         web_app: {
-//             url: 'https://musical-caramel-cae47e.netlify.app/'
-//         }
-//     })
-// });
