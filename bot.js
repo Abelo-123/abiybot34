@@ -460,14 +460,19 @@ app.all('/api/simulate/newuser', async (req, res) => {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ initData: mockInitData })
         });
-        authResult = await authRes.json();
+        const resText = await authRes.text();
+        try {
+            authResult = JSON.parse(resText);
+        } catch (e) {
+            authResult = { raw_response: resText };
+        }
         trace.steps.push({
             step: 2,
             name: 'Backend Authentication & Registration (/api/app/auth)',
             endpoint: 'POST https://primore-admin-server.onrender.com/api/app/auth',
             http_status: authRes.status,
             response: authResult,
-            status: (authResult && authResult.success && authResult.user && authResult.user.tg_id === simTgId) ? 'SUCCESS' : 'FAILED'
+            status: (authResult && authResult.success && authResult.user && String(authResult.user.tg_id) === String(simTgId)) ? 'SUCCESS' : 'FAILED'
         });
     } catch (err) {
         trace.steps.push({
@@ -482,7 +487,7 @@ app.all('/api/simulate/newuser', async (req, res) => {
 
     // Step 3: MySQL Database Record Verification
     try {
-        const [rows] = await pool.execute('SELECT tg_id, username, first_name, referral_code, created_at FROM auth WHERE tg_id = ? LIMIT 1', [simTgId]);
+        const [rows] = await pool.execute('SELECT tg_id, username, first_name, referral_code, balance FROM auth WHERE tg_id = ? LIMIT 1', [simTgId]);
         if (rows.length > 0) {
             trace.steps.push({
                 step: 3,
