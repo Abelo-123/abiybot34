@@ -16,7 +16,7 @@ const bot = new TelegramBot(process.env.BOT_TOKEN);
 const botTokenStr = process.env.BOT_TOKEN || '';
 
 // Bot for admin notifications (deposits, orders, etc.)
-const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || '8968588721:AAGw4T4NOv-YKB-6R39WRVPtWuMYaoxCe_c';
+const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || '8762895648:AAHC5CKYWWSDWCWJpcp4TCiZv2vEcYsks8w';
 const adminBot = new TelegramBot(ADMIN_BOT_TOKEN);
 
 const pool = mysql.createPool({
