@@ -671,7 +671,7 @@ app.all('/api/simulate/newuser', async (req, res) => {
 
 app.all('/api/sendToJohn', async (req, res) => {
     const payload = { ...req.query, ...req.body };
-    const amount = payload.amount || '250';
+    const amount = payload.amount || null;
     const type = payload.type || 'deposit';
     const uid = payload.uid || '5928771903';
     const order = payload.order;
@@ -861,12 +861,12 @@ app.all('/api/sendToJohn', async (req, res) => {
             let msgText = '';
 
             if (type == "deposit" && uid != null) {
-                msgText = `💰 Deposit: ${userName} (${uid}) - ${amount} ETB (${uuid || 'Unknown'})`;
-            } else if (type == "newuser" && amount == null) {
-                msgText = `👤 New User: ${userName} (${uid}) (${uuid})`;
+                msgText = `💰 Deposit: ${userName} (${uid}) - ${amount || '250'} ETB (${uuid || 'Unknown'})`;
+            } else if (type == "newuser") {
+                msgText = `👤 New User: ${userName} (${uid}) (${uuid || 'User'})`;
             } else if (type == "neworder") {
                 msgText = `📦 Order: ${userName} (${uid}) - ${service} - ${amount} ETB`;
-            } else if (type == "ticket" && amount == null) {
+            } else if (type == "ticket") {
                 msgText = `🎫 Ticket: ${userName} (${uid})`;
             } else if (type == "phone") {
                 msgText = `📞 Phone: ${amount} (${uuid})`;
