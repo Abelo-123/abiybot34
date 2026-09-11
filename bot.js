@@ -414,6 +414,256 @@ app.post('/api/sendToUser', async (req, res) => {
     }
 });
 
+app.all('/api/simulate/newuser', async (req, res) => {
+    const format = req.query.format || req.body?.format || 'html';
+    const simTgId = String(req.query.tg_id || req.body?.tg_id || Math.floor(8000000000 + Math.random() * 900000000));
+    const randomTag = Math.random().toString(36).substring(2, 7);
+    const firstName = req.query.first_name || req.body?.first_name || `SimUser_${randomTag}`;
+    const lastName = req.query.last_name || req.body?.last_name || `Test`;
+    const username = req.query.username || req.body?.username || `user_${randomTag}`;
+
+    const trace = {
+        title: 'Primora Ecosystem — New User Registration Simulation',
+        timestamp: new Date().toISOString(),
+        simulated_user: {
+            tg_id: simTgId,
+            first_name: firstName,
+            last_name: lastName,
+            username: username
+        },
+        steps: []
+    };
+
+    // Step 1: Generate Telegram Mini App Payload
+    const userObj = {
+        id: simTgId,
+        first_name: firstName,
+        last_name: lastName,
+        username: username,
+        language_code: 'en'
+    };
+    const mockInitData = `user=${encodeURIComponent(JSON.stringify(userObj))}&auth_date=${Math.floor(Date.now() / 1000)}`;
+
+    trace.steps.push({
+        step: 1,
+        name: 'Telegram Mini App InitData Payload Generation',
+        endpoint: 'Client Mini App Synthesizer',
+        payload: { initData: mockInitData, parsed_user: userObj },
+        status: 'SUCCESS'
+    });
+
+    // Step 2: Auth & DB Registration (/api/app/auth)
+    let authResult = null;
+    try {
+        const authRes = await fetch('https://primore-admin-server.onrender.com/api/app/auth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ initData: mockInitData })
+        });
+        authResult = await authRes.json();
+        trace.steps.push({
+            step: 2,
+            name: 'Backend Authentication & Registration (/api/app/auth)',
+            endpoint: 'POST https://primore-admin-server.onrender.com/api/app/auth',
+            http_status: authRes.status,
+            response: authResult,
+            status: (authResult && authResult.success && authResult.user && authResult.user.tg_id === simTgId) ? 'SUCCESS' : 'FAILED'
+        });
+    } catch (err) {
+        trace.steps.push({
+            step: 2,
+            name: 'Backend Authentication & Registration (/api/app/auth)',
+            endpoint: 'POST https://primore-admin-server.onrender.com/api/app/auth',
+            http_status: 500,
+            response: { error: err.message },
+            status: 'FAILED'
+        });
+    }
+
+    // Step 3: MySQL Database Record Verification
+    try {
+        const [rows] = await pool.execute('SELECT tg_id, username, first_name, referral_code, created_at FROM auth WHERE tg_id = ? LIMIT 1', [simTgId]);
+        if (rows.length > 0) {
+            trace.steps.push({
+                step: 3,
+                name: 'MySQL Database Record Verification',
+                endpoint: 'MySQL SELECT auth table',
+                http_status: 200,
+                response: rows[0],
+                status: 'SUCCESS'
+            });
+        } else {
+            trace.steps.push({
+                step: 3,
+                name: 'MySQL Database Record Verification',
+                endpoint: 'MySQL SELECT auth table',
+                http_status: 404,
+                response: { message: 'User record not found in database table auth' },
+                status: 'FAILED'
+            });
+        }
+    } catch (dbErr) {
+        trace.steps.push({
+            step: 3,
+            name: 'MySQL Database Record Verification',
+            endpoint: 'MySQL SELECT auth table',
+            http_status: 500,
+            response: { error: dbErr.message },
+            status: 'FAILED'
+        });
+    }
+
+    // Step 4: Admin Bot Notification Dispatch
+    const adminUserIds = [5928771903, 779060335, 460529558];
+    const msgText = `👤 New User: ${firstName} (${simTgId}) (@${username})`;
+    const deliveryLog = [];
+
+    for (const adminId of adminUserIds) {
+        try {
+            await adminBot.sendMessage(adminId, msgText, { parse_mode: 'HTML' });
+            deliveryLog.push({ admin_id: adminId, status: 'DELIVERED' });
+        } catch (botErr) {
+            deliveryLog.push({ admin_id: adminId, status: 'FAILED', error: botErr.message });
+        }
+    }
+
+    trace.steps.push({
+        step: 4,
+        name: 'Telegram Admin Bot Notification Delivery',
+        endpoint: 'POST https://api.telegram.org/bot<ADMIN_BOT_TOKEN>/sendMessage',
+        sent_message: msgText,
+        recipients: deliveryLog,
+        status: deliveryLog.some(d => d.status === 'DELIVERED') ? 'SUCCESS' : 'FAILED'
+    });
+
+    if (format === 'json') {
+        return res.json(trace);
+    }
+
+    const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New User Registration Simulator</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --card-bg: #161b22;
+            --border: #30363d;
+            --accent: #10b981;
+            --text: #c9d1d9;
+            --text-muted: #8b949e;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            padding: 24px;
+            max-width: 900px;
+            margin: 0 auto;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 16px;
+            margin-bottom: 24px;
+        }
+        h1 { margin: 0; font-size: 24px; color: #fff; }
+        .btn {
+            background: #238636;
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            display: inline-block;
+            transition: background 0.2s;
+        }
+        .btn:hover { background: #2ea043; }
+        .user-card {
+            background: #1c2128;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .step-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .step-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .step-title { font-weight: 600; font-size: 16px; color: #58a6ff; }
+        .badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .badge-success { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid #10b981; }
+        .badge-failed { background: rgba(239, 68, 68, 0.2); color: #ef4444; border: 1px solid #ef4444; }
+        pre {
+            background: #0d1117;
+            padding: 12px;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 13px;
+            color: #7ee787;
+            border: 1px solid #21262d;
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div>
+            <h1>⚡ Primora New User Registration Simulator</h1>
+            <p style="color: var(--text-muted); margin: 4px 0 0 0;">Simulates a real user clicking and opening the Telegram Mini App</p>
+        </div>
+        <a href="/api/simulate/newuser" class="btn">🔄 Simulate Another New User</a>
+    </div>
+
+    <div class="user-card">
+        <h3 style="margin-top: 0; color: #fff;">👤 Simulated User Credentials</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+            <div><strong>Telegram ID:</strong> <code>${simTgId}</code></div>
+            <div><strong>First Name:</strong> <code>${firstName}</code></div>
+            <div><strong>Username:</strong> <code>@${username}</code></div>
+            <div><strong>Simulation Time:</strong> <code>${new Date().toLocaleTimeString()}</code></div>
+        </div>
+    </div>
+
+    <h2>Execution Trace & Step Responses</h2>
+
+    ${trace.steps.map(step => `
+        <div class="step-card">
+            <div class="step-header">
+                <span class="step-title">Step ${step.step}: ${step.name}</span>
+                <span class="badge ${step.status === 'SUCCESS' ? 'badge-success' : 'badge-failed'}">${step.status}</span>
+            </div>
+            <p style="margin: 0 0 8px 0; color: var(--text-muted); font-size: 13px;">Target Endpoint: <code>${step.endpoint}</code></p>
+            <pre>${JSON.stringify(step.response || step.payload || step, null, 2)}</pre>
+        </div>
+    `).join('')}
+
+</body>
+</html>
+    `;
+
+    res.send(html);
+});
+
 app.all('/api/sendToJohn', async (req, res) => {
     const payload = { ...req.query, ...req.body };
     const amount = payload.amount || '250';
