@@ -457,7 +457,7 @@ app.all('/api/simulate/newuser', async (req, res) => {
     try {
         const authRes = await fetch('https://primore-admin-server.onrender.com/api/app/auth', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', 'User-Agent': 'PrimoraSimBot/1.0' },
             body: JSON.stringify({ initData: mockInitData })
         });
         const resText = await authRes.text();
