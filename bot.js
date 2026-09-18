@@ -15,7 +15,7 @@ const lastMessages = new Map();
 const bot = new TelegramBot(process.env.BOT_TOKEN);
 const botTokenStr = process.env.BOT_TOKEN || '';
 
-const ADMIN_BOT_TOKEN = '8731737556:AAFOphwlw36DT9DXncUpRmVqlPh7JBDEnvw';
+const ADMIN_BOT_TOKEN = process.env.ADMIN_BOT_TOKEN || '8731737556:AAFOphwlw36DT9DXncUpRmVqlPh7JBDEnvw';
 const adminBot = new TelegramBot(ADMIN_BOT_TOKEN);
 
 const pool = mysql.createPool({
