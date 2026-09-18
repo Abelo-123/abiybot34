@@ -593,7 +593,7 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-const WEBHOOK_URL = process.env.RENDER_EXTERNAL_URL || 'https://abiybot34.onrender.com';
+const WEBHOOK_URL = 'https://abiybot34.onrender.com';
 
 bot.setWebHook(`${WEBHOOK_URL}/bot${process.env.BOT_TOKEN}`).catch(err => {
     console.error('Failed to set webhook:', err.message);
