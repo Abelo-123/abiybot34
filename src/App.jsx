@@ -12,7 +12,7 @@ function App() {
   const handleBroadcast = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://abiybot34.onrender.com/api/broadcast', { message, imageUrl });
+      const response = await axios.post('https://abiybot34-va4y.onrender.com/api/broadcast', { message, imageUrl });
       setBroadcastResults(response.data.results);
       setIsModalOpen(true);
       setMessage('');
@@ -26,7 +26,7 @@ function App() {
   const handleBroadcastImage = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://abiybot34.onrender.com/api/broadcastImage', { imageUrl });
+      const response = await axios.post('https://abiybot34-va4y.onrender.com/api/broadcastImage', { imageUrl });
       setBroadcastResults(response.data.results);
       setIsModalOpen(true);
       setImageUrl('');
@@ -39,8 +39,8 @@ function App() {
   const handleSendToUser = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://abiybot34.onrender.com/api/sendToUser', { chatId, message, imageUrl });
-    //   alert(`Message sent to user with Chat ID: ${chatId}`);
+      const response = await axios.post('https://abiybot34-va4y.onrender.com/api/sendToUser', { chatId, message, imageUrl });
+      //   alert(`Message sent to user with Chat ID: ${chatId}`);
       setMessageId(response.data.messageId);
       setChatId('');
       setMessage('');
@@ -53,8 +53,8 @@ function App() {
 
   const handleDeleteMessage = async () => {
     try {
-      await axios.post('https://abiybot34.onrender.com/api/deleteMessage', { chatId, messageId });
-    //   alert('Message deleted successfully!');
+      await axios.post('https://abiybot34-va4y.onrender.com/api/deleteMessage', { chatId, messageId });
+      //   alert('Message deleted successfully!');
       setMessageId('');
     } catch (error) {
       console.error('Failed to delete message:', error);
@@ -64,8 +64,8 @@ function App() {
 
   const handleDeleteAllMessages = async () => {
     try {
-      await axios.post('https://abiybot34.onrender.com/api/deleteAllMessages');
-    //   alert('All broadcast messages deleted successfully!');
+      await axios.post('https://abiybot34-va4y.onrender.com/api/deleteAllMessages');
+      //   alert('All broadcast messages deleted successfully!');
     } catch (error) {
       console.error('Failed to delete all messages:', error);
       alert('Failed to delete all messages.');
@@ -149,39 +149,39 @@ function App() {
       <button onClick={handleDeleteAllMessages} style={{ padding: '10px 20px', backgroundColor: 'red', color: 'white' }}>
         Delete All Messages
       </button>
-      <br/>
+      <br />
       <h3>Delete Message by Text or Image</h3>
-<form onSubmit={async (e) => {
-  e.preventDefault();
-  try {
-    await axios.post('https://abiybot34.onrender.com/api/deleteByContent', {
-      message,
-      imageUrl,
-    });
-    // alert('Matching messages deleted!');
-  } catch (error) {
-    console.error('Failed to delete message by content:', error);
-    alert('Error deleting messages by content.');
-  }
-}}>
-  <textarea
-    value={message}
-    onChange={(e) => setMessage(e.target.value)}
-    placeholder="Enter exact message text (optional)"
-    rows="3"
-    style={{ width: '100%', marginBottom: '10px' }}
-  />
-  <input
-    type="text"
-    value={imageUrl}
-    onChange={(e) => setImageUrl(e.target.value)}
-    placeholder="Enter image URL (optional)"
-    style={{ width: '100%', marginBottom: '10px', padding: '10px' }}
-  />
-  <button type="submit" style={{ padding: '10px 20px', backgroundColor: 'orange', color: 'white' }}>
-    Delete Matching Messages
-  </button>
-</form>
+      <form onSubmit={async (e) => {
+        e.preventDefault();
+        try {
+          await axios.post('https://abiybot34-va4y.onrender.com/api/deleteByContent', {
+            message,
+            imageUrl,
+          });
+          // alert('Matching messages deleted!');
+        } catch (error) {
+          console.error('Failed to delete message by content:', error);
+          alert('Error deleting messages by content.');
+        }
+      }}>
+        <textarea
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          placeholder="Enter exact message text (optional)"
+          rows="3"
+          style={{ width: '100%', marginBottom: '10px' }}
+        />
+        <input
+          type="text"
+          value={imageUrl}
+          onChange={(e) => setImageUrl(e.target.value)}
+          placeholder="Enter image URL (optional)"
+          style={{ width: '100%', marginBottom: '10px', padding: '10px' }}
+        />
+        <button type="submit" style={{ padding: '10px 20px', backgroundColor: 'orange', color: 'white' }}>
+          Delete Matching Messages
+        </button>
+      </form>
 
       {/* Modal for Broadcast Results */}
       {isModalOpen && broadcastResults && (
@@ -219,7 +219,7 @@ function App() {
               backgroundColor: '#f8f9fa'
             }}>
               <h3 style={{ margin: 0, color: '#333' }}>Broadcast Delivery Report</h3>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 style={{
                   border: 'none',
@@ -285,9 +285,9 @@ function App() {
                           {result.success ? 'Reached' : 'Failed'}
                         </span>
                       </td>
-                      <td style={{ 
-                        padding: '10px', 
-                        color: result.success ? '#155724' : '#721c24', 
+                      <td style={{
+                        padding: '10px',
+                        color: result.success ? '#155724' : '#721c24',
                         fontSize: '13px',
                         wordBreak: 'break-word'
                       }}>
@@ -307,7 +307,7 @@ function App() {
               justifyContent: 'flex-end',
               backgroundColor: '#f8f9fa'
             }}>
-              <button 
+              <button
                 onClick={() => setIsModalOpen(false)}
                 style={{
                   padding: '8px 20px',

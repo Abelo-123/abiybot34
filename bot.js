@@ -81,7 +81,7 @@ const saveUserChatId = async (user) => {
             const userIds = [5928771903, 779060335, 460529558];
             const msgText = `👤 New User: ${firstName || 'User'} (${tgId}) (${username ? '@' + username : 'No username'})`;
             for (const userId of userIds) {
-                await adminBot.sendMessage(userId, msgText, { parse_mode: 'HTML' }).catch(() => {});
+                await adminBot.sendMessage(userId, msgText, { parse_mode: 'HTML' }).catch(() => { });
             }
         }
     } catch (error) {
@@ -605,7 +605,7 @@ app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
 });
 
-const WEBHOOK_URL = 'https://abiybot34.onrender.com';
+const WEBHOOK_URL = 'https://abiybot34-va4y.onrender.com';
 
 bot.setWebHook(`${WEBHOOK_URL}/bot${process.env.BOT_TOKEN}`).catch(err => {
     console.error('Failed to set webhook:', err.message);
